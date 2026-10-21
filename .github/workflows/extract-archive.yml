@@ -1,0 +1,88 @@
+name: Extract Mission Control ZIP
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: extract-mission-control-zip
+  cancel-in-progress: false
+
+jobs:
+  extract-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+
+      - name: Safely extract project files
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import shutil
+          import zipfile
+
+          archive = Path("lifeos-mission-control-github-pages.zip")
+          if not archive.is_file():
+              raise SystemExit(f"Required archive not found: {archive}")
+
+          destination = Path("extracted-project")
+          destination.mkdir()
+
+          with zipfile.ZipFile(archive) as zf:
+              members = zf.infolist()
+              if not members:
+                  raise SystemExit("The ZIP archive is empty.")
+
+              for member in members:
+                  name = member.filename
+                  path = PurePosixPath(name)
+                  if path.is_absolute() or ".." in path.parts:
+                      raise SystemExit(f"Unsafe ZIP path rejected: {name}")
+                  if path.parts and ":" in path.parts[0]:
+                      raise SystemExit(f"Unsafe ZIP path rejected: {name}")
+
+              zf.extractall(destination)
+
+          # The archive contains one enclosing project directory. Copy its
+          # contents into the repository root, preserving nested directories.
+          roots = [p for p in destination.iterdir()]
+          if len(roots) == 1 and roots[0].is_dir():
+              source = roots[0]
+          else:
+              source = destination
+
+          for item in source.iterdir():
+              target = Path(item.name)
+              if target.name == "extract-archive.yml":
+                  continue
+              if item.is_dir():
+                  shutil.copytree(item, target, dirs_exist_ok=True)
+              else:
+                  shutil.copy2(item, target)
+
+          shutil.rmtree(destination)
+          print("ZIP extracted into the repository root.")
+          PY
+
+      - name: Remove uploaded archive
+        run: rm lifeos-mission-control-github-pages.zip
+
+      - name: Commit extracted project
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No extracted changes to commit."
+            exit 0
+          fi
+          git commit -m "Extract Mission Control GitHub Pages project"
+          git push origin HEAD:main
