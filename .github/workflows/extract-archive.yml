@@ -60,7 +60,10 @@ jobs:
 
           for item in source.iterdir():
               target = Path(item.name)
-              if target.name == "extract-archive.yml":
+              # Do not let the Actions token push archived workflow files.
+              # The deploy workflow can be added separately after validation.
+              if item.name == ".github":
+                  print("Skipping archived .github directory; workflow files need separate approval.")
                   continue
               if item.is_dir():
                   shutil.copytree(item, target, dirs_exist_ok=True)
