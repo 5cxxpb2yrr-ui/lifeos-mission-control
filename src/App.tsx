@@ -102,7 +102,7 @@ export default function App() {
       const matchesQuery = !normalized || [entry.title, entry.details, entry.type].some((value) => value?.toLowerCase().includes(normalized));
       if (!matchesQuery) return false;
       if (screen === "entities") return entry.type === "person" || entry.type === "asset";
-      if (screen === "inbox") return entry.type !== "person" && entry.type !== "asset";
+      if (screen === "inbox") return entry.status === "open" && entry.type !== "person" && entry.type !== "asset";
       if (screen === "search") return true;
       return entry.status === "open";
     }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
