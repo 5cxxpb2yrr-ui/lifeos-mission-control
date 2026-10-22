@@ -33,7 +33,7 @@ export interface Briefing {
 
 export const sampleBriefing: Briefing = {
   generatedAt: "2026-10-21T08:30:00-04:00",
-  status: "You're on track.",
+  status: "Illustrative sample",
   nextBestAction: {
     id: "ga-power",
     entity: "Georgia Power",
