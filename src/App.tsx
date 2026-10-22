@@ -109,8 +109,8 @@ export default function App() {
     </>}
 
     {(screen === "inbox" || screen === "entities" || screen === "search") && <section className="workspace">
-      <div className="workspace__heading"><div><p className="workspace__eyebrow">{screen === "entities" ? "PEOPLE & ASSETS" : screen === "search" ? "UNIVERSAL SEARCH" : "OPEN LOOPS"}</p><h2>{screen === "entities" ? "Entities" : screen === "search" ? "Search LifeOS" : "Inbox"}</h2></div><span className="count-pill">{filteredEntries.length}</span></div>
-      {screen === "search" && <label className="search-field"><Search size={18}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search titles, details, types…" autoFocus /></label>}
+      <div className="workspace__heading"><div><p className="workspace__eyebrow">{screen === "entities" ? "PEOPLE & ASSETS" : screen === "search" ? "LOCAL SEARCH" : "OPEN LOOPS"}</p><h2>{screen === "entities" ? "Entities" : screen === "search" ? "Search captured entries" : "Inbox"}</h2></div><span className="count-pill">{filteredEntries.length}</span></div>
+      {screen === "search" && <label className="search-field"><Search size={18}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search saved titles, details, types…" autoFocus /></label>}
       {screen !== "search" && <p className="workspace__hint">{screen === "entities" ? "People and assets you capture are listed here." : "Capture a task, question, event, or follow-up. Your entries stay on this device."}</p>}
       {filteredEntries.length === 0 ? <div className="empty-state"><ClipboardList size={28}/><strong>{screen === "search" && query ? "No matches found" : screen === "entities" ? "No entities yet" : "Inbox is clear"}</strong><p>{screen === "search" && query ? "Try another search term." : "Use Capture to add your first item. Nothing will be added automatically."}</p>{screen !== "search" && <button className="capture-button" onClick={() => setCaptureOpen(true)}><Plus size={17}/> Capture an item</button>}</div> : <div className="entry-list">{filteredEntries.map(entry => <article className={`entry-card ${entry.status === "completed" ? "entry-card--done" : ""}`} key={entry.id}>
         <button className="entry-check" onClick={() => void toggleEntry(entry)} aria-label={entry.status === "open" ? "Mark complete" : "Reopen"}>{entry.status === "completed" ? <CircleCheck size={22}/> : <span/>}</button>
@@ -133,7 +133,7 @@ export default function App() {
     })}</nav>
 
     {captureOpen && <div className="modal-backdrop" onClick={() => setCaptureOpen(false)}><section className="capture-modal" role="dialog" aria-modal="true" aria-labelledby="capture-title" onClick={(event) => event.stopPropagation()}>
-      <header><div><p className="workspace__eyebrow">UNIVERSAL CAPTURE</p><h2 id="capture-title">Add to LifeOS</h2></div><button className="close-button" aria-label="Close capture" onClick={() => setCaptureOpen(false)}><X size={20}/></button></header>
+      <header><div><p className="workspace__eyebrow">QUICK CAPTURE · THIS DEVICE</p><h2 id="capture-title">Add to LifeOS</h2></div><button className="close-button" aria-label="Close capture" onClick={() => setCaptureOpen(false)}><X size={20}/></button></header>
       <form onSubmit={(event) => void createEntry(event)}>
         <label>Entry type<select value={entryType} onChange={(event) => setEntryType(event.target.value as EntryType)}>{entryTypes.map(type => <option value={type.value} key={type.value}>{type.label}</option>)}</select></label>
         <label>Title<input required maxLength={160} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="What do you need to capture?"/></label>
