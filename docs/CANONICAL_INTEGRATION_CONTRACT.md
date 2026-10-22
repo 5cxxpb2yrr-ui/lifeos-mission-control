@@ -127,3 +127,19 @@ Read-only verification of the current canonical V2 code shows:
 - The separate `docs/LIFEOS_V1_MVP_SPEC.md` is a V1 specification and must not be used to describe the current V2 physical IndexedDB schema.
 
 Therefore, the verified issue is **not** simply “three stores versus five stores.” The real boundary is that the prototype has a separate database name/schema and its own local `LifeEntry` records, while canonical V2 stores a validated `LifeOSDatabase` snapshot and already has domain operations for creating events, open loops, people, and relationships. Do not share the prototype's database or migrate its records automatically. If the next phase is approved, the safest implementation target is the canonical V2 app's existing capture workflow and domain operations—not a direct IndexedDB bridge. No production or canonical code was changed during this inspection.
+
+
+## Existing canonical capture workflow (verified)
+
+Further read-only inspection of the current canonical `components/mission-control/MissionControl.tsx` and `domain/services/operations.ts` found that V2 already has a global **Universal Capture** modal and canonical operations:
+
+- The capture UI offers Event, Open Loop / Task, Person, and Note / Observation.
+- Event capture has a constrained canonical event-type selector and optional start/due date, modifiers, and body content.
+- The component delegates submitted input to its existing `capture(...)` handler; domain operations include `createEvent`, `createOpenLoop`, `createPerson`, and audit-appending update operations.
+- Canonical search, attention, and mission summaries are already resolved from the canonical database and domain resolvers.
+
+### Updated next-step recommendation
+
+Do not build another capture system or add a second local data model. First evaluate the existing V2 Universal Capture UI against the prototype's simpler phone-first interaction. The likely smallest next change—only after owner approval—is to simplify the existing capture form and navigation in the canonical app while retaining the existing domain operations, audit trail, integrity checks, and IndexedDB persistence.
+
+The prototype should remain a non-production reference until the owner chooses whether it will be retained, archived, or closed. No source code in the canonical V2 repository was modified in this inspection.
