@@ -28,6 +28,16 @@ test("capture, edit, complete, search, and persist an entry", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Edited browser verification task" })).toBeVisible();
 });
 
+test("capture dialog closes with Escape", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Capture" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+
+  await page.keyboard.press("Escape");
+
+  await expect(page.getByRole("dialog")).toBeHidden();
+});
+
 test("call action never dials an unverified sample number", async ({ page }) => {
   await page.goto("/");
   const originalUrl = page.url();
