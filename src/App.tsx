@@ -61,7 +61,7 @@ export default function App() {
     if (actionId === "call") {
       await recordActivity({ id: crypto.randomUUID(), recommendationId: item.id, title: item.title, actionId, status: "opened", createdAt: new Date().toISOString() });
       setActivity(await loadActivity());
-      window.location.href = "tel:+18004366555";
+      notify("No verified phone number is attached to this illustrative sample. Verify the contact details before calling.");
       return;
     }
     const defer = actionId === "more" || actionId === "details";
