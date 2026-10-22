@@ -13,3 +13,15 @@
 .actions--hero .actions__overflow{flex:initial;min-width:0;padding:0;border-color:rgba(77,119,177,.34);border-radius:20px;background:linear-gradient(#19263a,#101a2a);color:#9fb7dd}
 @media(max-width:540px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hero__main{align-items:flex-start}.hero__main>div:last-child{min-width:0}.hero h2{font-size:clamp(19px,5vw,24px)}.hero .actions--hero{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.hero .actions--hero button{min-width:0;padding-inline:7px;font-size:11px}}
 @media(max-width:350px){.grid{grid-template-columns:1fr}.hero__main{flex-direction:column}.hero .actions--hero{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Keep quick capture focused; tuck optional scheduling into a compact disclosure. */
+.capture-advanced{border:1px solid rgba(245,158,11,.22);border-radius:13px;background:rgba(255,255,255,.018);overflow:hidden}
+.capture-advanced>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;padding:11px 12px;cursor:pointer;list-style:none;color:#fbbf24;font-size:12px;font-weight:800}
+.capture-advanced>summary::-webkit-details-marker{display:none}
+.capture-advanced>summary::after{content:"＋";flex:0 0 auto;font-size:15px}
+.capture-advanced[open]>summary::after{content:"−"}
+.capture-advanced>summary span{margin-left:auto;color:#98a8c0;font-size:11px;font-weight:500;text-align:right}
+.capture-advanced>label{display:flex;flex-direction:column;gap:7px;padding:0 12px 12px;color:#c6d2e5;font-size:12px;font-weight:700}
+.capture-advanced[open]>summary{border-bottom:1px solid rgba(148,163,184,.12);margin-bottom:12px}
+@media(max-width:370px){.capture-advanced>summary{align-items:flex-start;flex-wrap:wrap}.capture-advanced>summary span{margin-left:0;text-align:left;flex:1 1 100%}}
