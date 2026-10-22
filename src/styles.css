@@ -25,3 +25,7 @@
 .capture-advanced>label{display:flex;flex-direction:column;gap:7px;padding:0 12px 12px;color:#c6d2e5;font-size:12px;font-weight:700}
 .capture-advanced[open]>summary{border-bottom:1px solid rgba(148,163,184,.12);margin-bottom:12px}
 @media(max-width:370px){.capture-advanced>summary{align-items:flex-start;flex-wrap:wrap}.capture-advanced>summary span{margin-left:0;text-align:left;flex:1 1 100%}}
+
+
+/* Type-aware capture guidance stays compact on narrow phones. */
+.capture-type-hint{margin:-5px 0 0;padding:9px 11px;border-left:2px solid #f59e0b;border-radius:0 9px 9px 0;background:rgba(120,53,15,.1);color:#aebbd0;font-size:11px;line-height:1.45}
