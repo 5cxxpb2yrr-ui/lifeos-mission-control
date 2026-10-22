@@ -28,6 +28,16 @@ test("capture, edit, complete, search, and persist an entry", async ({ page }) =
   await expect(page.getByRole("heading", { name: "Edited browser verification task" })).toBeVisible();
 });
 
+test("call action never dials an unverified sample number", async ({ page }) => {
+  await page.goto("/");
+  const originalUrl = page.url();
+
+  await page.getByRole("button", { name: "Call now" }).click();
+
+  await expect(page.getByText(/No verified phone number is attached to this illustrative sample/)).toBeVisible();
+  expect(page.url()).toBe(originalUrl);
+});
+
 test("people and assets route to Entities", async ({ page }) => {
   await page.goto("/");
 
