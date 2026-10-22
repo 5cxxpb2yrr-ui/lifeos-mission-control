@@ -19,6 +19,7 @@
   },
   "devDependencies": {
     "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "@types/react-dom": "latest",
+    "@playwright/test": "^1.55.0"
   }
 }
