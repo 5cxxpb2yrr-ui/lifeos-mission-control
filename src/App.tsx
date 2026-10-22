@@ -12,6 +12,10 @@ const entryTypes: { value: EntryType; label: string }[] = [
   { value: "question", label: "Question" }, { value: "follow-up", label: "Follow-up" },
   { value: "note", label: "Note" },
 ];
+function firstConfident<T extends { confidenceScore: number }>(items: T[]): T | undefined {
+  return items.find((item) => item.confidenceScore >= 50);
+}
+
 const screenLabels: Record<Screen, string> = { mission: "Mission", inbox: "Inbox", entities: "Entities", search: "Search", more: "More" };
 const captureCopy: Record<EntryType, { title: string; detailsLabel: string; detailsPlaceholder: string; hint: string }> = {
   task: { title: "What needs to get done?", detailsLabel: "Details", detailsPlaceholder: "Optional context or next step", hint: "A task or open loop to keep visible until it is resolved." },
@@ -105,6 +109,15 @@ export default function App() {
     notify(next.status === "completed" ? "Marked complete." : "Reopened.");
   };
 
+  const visibleNextBestAction = briefing.nextBestAction.confidenceScore >= 50 ? briefing.nextBestAction : undefined;
+  const visibleExecuteNow = firstConfident(briefing.executeNow);
+  const visibleDecisionsRequired = firstConfident(briefing.decisionsRequired);
+  const visibleAtRisk = firstConfident(briefing.atRisk);
+  const visibleWaiting = firstConfident(briefing.waiting);
+  const visibleOpportunities = firstConfident(briefing.opportunities);
+  const visibleRelationshipRepair = firstConfident(briefing.relationshipRepairs);
+  const visibleReviewQueue = briefing.reviewQueue.filter((item) => item.confidenceScore >= 50);
+
   const filteredEntries = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return entries.filter((entry) => {
@@ -126,14 +139,15 @@ export default function App() {
     </div></header>
 
     {screen === "mission" && <>
-      <section className="brief"><p>Your executive office has reviewed the full picture.<br/>Here is what deserves attention now.</p><div><span><CalendarDays size={17}/> {new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(new Date())}</span><small>● {briefing.status}</small></div></section>
+      <section className="brief"><p>Your executive office has reviewed the full picture.<br/>Here is what deserves attention now.</p><div><span><CalendarDays size={17}/> {new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(new Date())}</span><small>● Illustrative sample</small></div></section>
+      <p className="workspace__hint">Illustrative briefing only: these scenarios are sample content, not verified records from your LifeOS data.</p>
       <section className="feed">
-        <HeroCard item={briefing.nextBestAction} onAction={onAction}/>
-        <div className="grid">{briefing.executeNow[0] && <BriefingCard label="EXECUTE NOW" item={briefing.executeNow[0]} onAction={onAction}/>} {briefing.decisionsRequired[0] && <BriefingCard label="DECISIONS REQUIRED" item={briefing.decisionsRequired[0]} onAction={onAction}/>}</div>
-        {briefing.atRisk[0] && <BriefingCard label="AT RISK" item={briefing.atRisk[0]} onAction={onAction}/>}
-        <div className="grid">{briefing.waiting[0] && <BriefingCard label="WAITING" item={briefing.waiting[0]} onAction={onAction}/>} {briefing.opportunities[0] && <BriefingCard label="OPPORTUNITIES" item={briefing.opportunities[0]} onAction={onAction}/>}</div>
-        {briefing.relationshipRepairs[0] && <BriefingCard label="RELATIONSHIP REPAIRS" item={briefing.relationshipRepairs[0]} onAction={onAction}/>}
-        <ReviewCard items={briefing.reviewQueue} onAction={onAction}/>
+        {visibleNextBestAction ? <HeroCard item={visibleNextBestAction} onAction={onAction}/> : <p className="workspace__hint">No recommendation currently meets the 50% confidence threshold. Review the underlying evidence before acting.</p>}
+        <div className="grid">{visibleExecuteNow && <BriefingCard label="EXECUTE NOW" item={visibleExecuteNow} onAction={onAction}/>} {visibleDecisionsRequired && <BriefingCard label="DECISIONS REQUIRED" item={visibleDecisionsRequired} onAction={onAction}/>}</div>
+        {visibleAtRisk && <BriefingCard label="AT RISK" item={visibleAtRisk} onAction={onAction}/>}
+        <div className="grid">{visibleWaiting && <BriefingCard label="WAITING" item={visibleWaiting} onAction={onAction}/>} {visibleOpportunities && <BriefingCard label="OPPORTUNITIES" item={visibleOpportunities} onAction={onAction}/>}</div>
+        {visibleRelationshipRepair && <BriefingCard label="RELATIONSHIP REPAIRS" item={visibleRelationshipRepair} onAction={onAction}/>}
+        {visibleReviewQueue.length > 0 && <ReviewCard items={visibleReviewQueue} onAction={onAction}/>}
       </section>
     </>}
 
