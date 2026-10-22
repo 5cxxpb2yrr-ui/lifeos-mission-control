@@ -56,3 +56,25 @@ test("capture canonical mobile Mission Control screenshot artifact", async ({ pa
     animations: "disabled",
   });
 });
+
+test("optional due date stays tucked away and persists when set", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Capture" }).click();
+
+  const advanced = page.locator("details.capture-advanced");
+  await expect(advanced).toBeVisible();
+  await expect(advanced).not.toHaveJSProperty("open", true);
+  await expect(page.getByLabel("Due date")).not.toBeVisible();
+
+  await advanced.locator("summary").click();
+  await expect(page.getByLabel("Due date")).toBeVisible();
+  await page.getByLabel("Title").fill("Due date disclosure test");
+  await page.getByLabel("Due date").fill("2026-10-25");
+  await expect(advanced).toContainText("Due date set");
+  await page.getByRole("button", { name: "Save entry" }).click();
+
+  await expect(page.getByRole("heading", { name: "Due date disclosure test" })).toBeVisible();
+  await page.getByRole("button", { name: "Edit entry" }).click();
+  await advanced.locator("summary").click();
+  await expect(page.getByLabel("Due date")).toHaveValue("2026-10-25");
+});
