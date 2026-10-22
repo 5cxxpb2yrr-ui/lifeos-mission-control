@@ -26,6 +26,7 @@ export function BriefingCard({ label, item, onAction }: { label: string; item: B
     <header><span><Icon size={17}/>{label}</span>{item.badge ? <b>{item.badge}</b> : <ArrowRight size={17}/>}</header>
     <div className="card__body"><div className="icon"><Icon size={27}/></div><div><h3>{item.title}</h3><p>{item.context}</p>{item.value && <strong className="value">{item.value}</strong>}</div></div>
     <p className="recommendation">{item.recommendation}</p>
+    <div className="detail"><AlertTriangle size={18}/><div><small>Risk of Inaction</small><p>{item.riskOfInaction}</p></div></div>
     <div className="scores"><Score label="Impact" value={item.impactScore} accent={tone === "green" ? "#34d399" : tone === "amber" ? "#fb7185" : "#76a8ff"}/><Score label="Confidence" value={item.confidenceScore}/></div>
     <Actions item={item} onAction={onAction}/>
   </article>;
