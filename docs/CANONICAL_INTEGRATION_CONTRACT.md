@@ -63,3 +63,34 @@ After implementation is approved, validate with isolated test data and automated
 ## Non-goals
 
 This proposal does not authorize cloud sync, new production endpoints, authentication changes, schema/store changes, production data migration, import, merge, or deployment. It does not claim that a canonical write interface currently exists.
+
+
+## Canonical repository findings (read-only inspection)
+
+Inspected the canonical `5cxxpb2yrr-ui/lifeos` repository on its current default branch. The following are verified repository contracts, not assumptions about a network API:
+
+- `domain/contracts/database.ts` exports `LifeOSDatabase`, with separate collections for `events`, `openLoops`, `people`, `assets`, `relationships`, and other domain records.
+- `Event` records use `entityType: "event"`, an `eventType`, title, status, optional dates, and typed ID references such as `personIds`, `assetIds`, and `openLoopIds`.
+- `OpenLoop` is its own canonical collection and contract (`entityType: "open_loop"`) with a type, status, optional priority/due date, and typed relationship references. It must not be silently flattened into an event.
+- `Person` and `Asset` are distinct canonical record types. Prototype person/asset entries require explicit mapping and validation; a display title alone is not a complete person record.
+- `Relationship` records use canonical `fromId`/`toId`, type fields, and a constrained `relationshipType` union.
+- `storage/indexeddb/database.ts` exports `loadLocalDatabase` and `saveLocalDatabase`; saves run canonical integrity validation. `docs/ARCHITECTURE.md` says the browser is the canonical personal-data store for the local-first MVP.
+- `domain/resolvers/attention.ts` owns attention-state resolution, and `domain/resolvers/search.ts` provides canonical search across supported database collections. Mission Control should consume these resolver-owned results rather than reimplementing them.
+
+### Entry-type mapping proposal
+
+| Prototype capture type | Canonical target candidate | Mapping rule |
+|---|---|---|
+| Task | `openLoops` | Create an `OpenLoop` with `type: "task"`; do not create a duplicate event unless the user explicitly records an event too. |
+| Question | `openLoops` | Use `type: "question"`; preserve question text and status. |
+| Follow-up | `openLoops` | Use `type: "follow_up"`; any person link must resolve to a canonical person ID. |
+| Event | `events` | Require a supported `EventType` and `EventStatus`; do not infer dates or links. |
+| Person | `people` | Require canonical person fields and preserve canonical ID/relationships. A single title is insufficient for a complete record. |
+| Asset | `assets` | Require a supported `assetType` and canonical fields; a single title is insufficient for a complete record. |
+| Note | No automatic target selected | Ask for explicit destination/type or define a reviewed canonical note representation before writes. |
+
+The prototype's local entry type list also includes `open loop` as a capture choice; before implementation, map it to a specific supported `OpenLoop.type` rather than inventing a new canonical type.
+
+### Remaining integration blocker
+
+The canonical repository currently documents a browser-local IndexedDB persistence boundary, not a cross-repository remote write API. The prototype has its own separate browser-local store. Therefore, do not connect the prototype by guessing an endpoint or by directly manipulating another application's IndexedDB database. A shared persistence/service boundary and identity/authentication design must be explicitly chosen and reviewed first. This inspection did not modify the canonical repository or any production data.
