@@ -15,6 +15,7 @@ export function HeroCard({ item, onAction }: { item: BriefingItem; onAction: Act
     <div className="hero__main"><div className="hero__mark"><span>L</span></div><div><h2>{item.title}</h2><p>{item.entity} · {item.recommendation}</p><div className="scores"><Score label="Impact" value={item.impactScore} accent="#f2b742"/><Score label="Confidence" value={item.confidenceScore}/></div></div></div>
     <div className="detail"><Target size={20}/><div><small>Expected Outcome</small><p>{item.expectedOutcome}</p></div></div>
     <div className="detail"><FileText size={20}/><div><small>Why This Matters Now</small><p>{item.context} {item.whyNow}</p></div></div>
+    <div className="detail"><AlertTriangle size={20}/><div><small>Risk of Inaction</small><p>{item.riskOfInaction}</p></div></div>
     <Actions item={item} onAction={onAction} hero/>
   </article>;
 }
