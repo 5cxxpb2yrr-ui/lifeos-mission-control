@@ -78,3 +78,33 @@ test("optional due date stays tucked away and persists when set", async ({ page 
   await advanced.locator("summary").click();
   await expect(page.getByLabel("Due date")).toHaveValue("2026-10-25");
 });
+
+
+test("capture prompts adapt to the selected entry type", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Capture" }).click();
+
+  const type = page.getByLabel("Entry type");
+  await expect(page.getByLabel("Title")).toHaveAttribute("placeholder", "What needs to get done?");
+  await expect(page.getByLabel("Details")).toBeVisible();
+
+  await type.selectOption("event");
+  await expect(page.getByLabel("Title")).toHaveAttribute("placeholder", "What is happening?");
+  await expect(page.getByLabel("Event details")).toBeVisible();
+  await expect(page.getByText(/does not create a canonical event record/)).toBeVisible();
+
+  await type.selectOption("person");
+  await expect(page.getByLabel("Relationship / context")).toBeVisible();
+  await expect(page.getByText(/not a complete canonical person record/)).toBeVisible();
+
+  await type.selectOption("asset");
+  await expect(page.getByLabel("Asset details")).toBeVisible();
+  await expect(page.getByText(/not a complete canonical asset record/)).toBeVisible();
+
+  const dimensions = await page.evaluate(() => ({
+    viewport: document.documentElement.clientWidth,
+    content: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.content).toBeLessThanOrEqual(dimensions.viewport);
+});
