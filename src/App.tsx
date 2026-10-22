@@ -22,6 +22,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [screen, setScreen] = useState<Screen>("mission");
   const [captureOpen, setCaptureOpen] = useState(false);
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [entryType, setEntryType] = useState<EntryType>("task");
   const [title, setTitle] = useState("");
   const [details, setDetails] = useState("");
@@ -57,16 +58,35 @@ export default function App() {
     notify(defer ? `${item.title} moved to Review Queue.` : `${item.title} marked complete.`);
   };
 
+  const openCapture = (entry?: LifeEntry) => {
+    setEditingEntryId(entry?.id ?? null);
+    setEntryType(entry?.type ?? "task");
+    setTitle(entry?.title ?? "");
+    setDetails(entry?.details ?? "");
+    setDueAt(entry?.dueAt ?? "");
+    setCaptureOpen(true);
+  };
+
+  const closeCapture = () => {
+    setCaptureOpen(false); setEditingEntryId(null);
+    setTitle(""); setDetails(""); setDueAt(""); setEntryType("task");
+  };
+
   const createEntry = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const cleanTitle = title.trim();
     if (!cleanTitle) return;
-    const entry: LifeEntry = { id: crypto.randomUUID(), type: entryType, title: cleanTitle, details: details.trim(), dueAt: dueAt || undefined, status: "open", createdAt: new Date().toISOString() };
-    await saveEntry(entry);
+    const existing = editingEntryId ? entries.find((entry) => entry.id === editingEntryId) : undefined;
+    const entry: LifeEntry = {
+      id: existing?.id ?? crypto.randomUUID(), type: entryType, title: cleanTitle,
+      details: details.trim(), dueAt: dueAt || undefined,
+      status: existing?.status ?? "open", createdAt: existing?.createdAt ?? new Date().toISOString(),
+    };
+    if (existing) await updateEntry(entry); else await saveEntry(entry);
     setEntries(await loadEntries());
-    setTitle(""); setDetails(""); setDueAt(""); setEntryType("task"); setCaptureOpen(false);
+    closeCapture();
     setScreen(entry.type === "person" || entry.type === "asset" ? "entities" : "inbox");
-    notify("Saved on this device.");
+    notify(existing ? "Changes saved on this device." : "Saved on this device.");
   };
 
   const toggleEntry = async (entry: LifeEntry) => {
@@ -93,7 +113,7 @@ export default function App() {
   return <div className="stage"><main className="phone">
     <header className="top"><div><h1>Life<span>OS</span></h1><p>Mission Control</p></div><div className="top__tools">
       <button className="tool-button" aria-label="Search" onClick={() => { setScreen("search"); setQuery(""); }}><Search size={19}/></button>
-      <button className="capture-button" onClick={() => setCaptureOpen(true)}><Plus size={18}/> Capture</button>
+      <button className="capture-button" onClick={() => openCapture()}><Plus size={18}/> Capture</button>
     </div></header>
 
     {screen === "mission" && <>
@@ -114,7 +134,7 @@ export default function App() {
       {screen !== "search" && <p className="workspace__hint">{screen === "entities" ? "People and assets you capture are listed here." : "Capture a task, question, event, or follow-up. Your entries stay on this device."}</p>}
       {filteredEntries.length === 0 ? <div className="empty-state"><ClipboardList size={28}/><strong>{screen === "search" && query ? "No matches found" : screen === "entities" ? "No entities yet" : "Inbox is clear"}</strong><p>{screen === "search" && query ? "Try another search term." : "Use Capture to add your first item. Nothing will be added automatically."}</p>{screen !== "search" && <button className="capture-button" onClick={() => setCaptureOpen(true)}><Plus size={17}/> Capture an item</button>}</div> : <div className="entry-list">{filteredEntries.map(entry => <article className={`entry-card ${entry.status === "completed" ? "entry-card--done" : ""}`} key={entry.id}>
         <button className="entry-check" onClick={() => void toggleEntry(entry)} aria-label={entry.status === "open" ? "Mark complete" : "Reopen"}>{entry.status === "completed" ? <CircleCheck size={22}/> : <span/>}</button>
-        <div className="entry-card__content"><div className="entry-meta"><span>{entry.type}</span>{entry.dueAt && <time>{new Date(entry.dueAt + (entry.dueAt.length === 10 ? "T12:00:00" : "")).toLocaleDateString()}</time>}</div><h3>{entry.title}</h3>{entry.details && <p>{entry.details}</p>}</div>
+        <div className="entry-card__content"><div className="entry-meta"><span>{entry.type}</span>{entry.dueAt && <time>{new Date(entry.dueAt + (entry.dueAt.length === 10 ? "T12:00:00" : "")).toLocaleDateString()}</time>}</div><h3>{entry.title}</h3>{entry.details && <p>{entry.details}</p>}<button className="entry-edit" onClick={() => openCapture(entry)}>Edit entry</button></div>
       </article>)}</div>}
     </section>}
 
@@ -132,15 +152,15 @@ export default function App() {
       return <button key={item} className={screen === item ? "active" : ""} aria-current={screen === item ? "page" : undefined} onClick={() => { setScreen(item); if (item !== "search") setQuery(""); }}><Icon/><span>{screenLabels[item]}</span></button>;
     })}</nav>
 
-    {captureOpen && <div className="modal-backdrop" onClick={() => setCaptureOpen(false)}><section className="capture-modal" role="dialog" aria-modal="true" aria-labelledby="capture-title" onClick={(event) => event.stopPropagation()}>
-      <header><div><p className="workspace__eyebrow">QUICK CAPTURE · THIS DEVICE</p><h2 id="capture-title">Add to LifeOS</h2></div><button className="close-button" aria-label="Close capture" onClick={() => setCaptureOpen(false)}><X size={20}/></button></header>
+    {captureOpen && <div className="modal-backdrop" onClick={closeCapture}><section className="capture-modal" role="dialog" aria-modal="true" aria-labelledby="capture-title" onClick={(event) => event.stopPropagation()}>
+      <header><div><p className="workspace__eyebrow">{editingEntryId ? "EDIT ENTRY · THIS DEVICE" : "QUICK CAPTURE · THIS DEVICE"}</p><h2 id="capture-title">{editingEntryId ? "Edit entry" : "Add to LifeOS"}</h2></div><button className="close-button" aria-label="Close capture" onClick={closeCapture}><X size={20}/></button></header>
       <form onSubmit={(event) => void createEntry(event)}>
         <label>Entry type<select value={entryType} onChange={(event) => setEntryType(event.target.value as EntryType)}>{entryTypes.map(type => <option value={type.value} key={type.value}>{type.label}</option>)}</select></label>
         <label>Title<input required maxLength={160} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="What do you need to capture?"/></label>
         <label>Details<textarea maxLength={2000} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Optional context or next step" rows={3}/></label>
         <label>Due date (optional)<input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)}/></label>
         <p className="local-note">Saved only in this browser on this device. No sample or test entry will be created automatically.</p>
-        <div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setCaptureOpen(false)}>Cancel</button><button type="submit" className="capture-button"><Plus size={17}/> Save entry</button></div>
+        <div className="modal-actions"><button type="button" className="secondary-button" onClick={closeCapture}>Cancel</button><button type="submit" className="capture-button">{editingEntryId ? "Save changes" : <><Plus size={17}/> Save entry</>}</button></div>
       </form>
     </section></div>}
     {toast && <div className="toast"><Check size={18}/>{toast}</div>}
