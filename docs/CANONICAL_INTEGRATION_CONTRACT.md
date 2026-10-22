@@ -94,3 +94,22 @@ The prototype's local entry type list also includes `open loop` as a capture cho
 ### Remaining integration blocker
 
 The canonical repository currently documents a browser-local IndexedDB persistence boundary, not a cross-repository remote write API. The prototype has its own separate browser-local store. Therefore, do not connect the prototype by guessing an endpoint or by directly manipulating another application's IndexedDB database. A shared persistence/service boundary and identity/authentication design must be explicitly chosen and reviewed first. This inspection did not modify the canonical repository or any production data.
+
+
+## Prototype persistence inspection (read-only)
+
+Inspected `src/storage/db.ts`, `src/App.tsx`, `package.json`, and the frozen MVP spec in this prototype branch.
+
+- The prototype's `lifeos` IndexedDB database currently declares `briefing`, `activity`, and `entries` stores (database version 2). The `entries` store was introduced by the capture UI migration while preserving the existing `briefing` and `activity` stores.
+- `LifeEntry` currently has only a prototype ID, one of seven UI entry types, title, details, optional due date, open/completed status, and creation time. It does not carry canonical entity fields, canonical relationship IDs, a sync state, or a canonical ID mapping.
+- New prototype entries are inserted with `add`; edits and completion use `put`. This is local persistence only, not a canonical repository operation.
+- The prototype's `docs/LIFEOS_V1_MVP_SPEC.md` separately freezes the canonical v1 database to exactly five stores: `entities`, `relationships`, `events`, `recommendations`, and `settings`; it explicitly says adding stores requires an architecture decision record (ADR).
+
+### Decision required before runtime integration
+
+There is a real architecture mismatch between this prototype's three-store IndexedDB schema and the canonical v1 specification's five-store schema. Do not point both apps at the same database name, add more stores, or attempt a silent schema migration as a shortcut. First choose one of these reviewed paths:
+
+1. **Preferred for in-place simplification:** implement capture in the canonical LifeOS application using its existing repository and schema, and treat this prototype as a visual/interaction reference only; or
+2. **Separate app remains intentional:** write an ADR approving a deliberate schema and persistence boundary, including how the frozen five-store contract is preserved or superseded.
+
+No runtime integration was made in this step. This is a design gate, not approval to modify the canonical repository.
