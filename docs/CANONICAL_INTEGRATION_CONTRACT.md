@@ -113,3 +113,17 @@ There is a real architecture mismatch between this prototype's three-store Index
 2. **Separate app remains intentional:** write an ADR approving a deliberate schema and persistence boundary, including how the frozen five-store contract is preserved or superseded.
 
 No runtime integration was made in this step. This is a design gate, not approval to modify the canonical repository.
+
+
+## Correction to the persistence comparison
+
+**This section supersedes the earlier paragraph titled “Decision required before runtime integration” where it compares the prototype's three stores directly against the v1 five-store specification.** That comparison mixed architecture versions and overstated the mismatch.
+
+Read-only verification of the current canonical V2 code shows:
+
+- `storage/indexeddb/database.ts` opens database `LIFEOS_V2_DB`, version 2, with one IndexedDB object store named `database`. That store holds a validated `LifeOSDatabase` snapshot.
+- `domain/contracts/database.ts` defines the canonical collections within that snapshot, including events, open loops, people, assets, relationships, and other domain data.
+- `docs/ARCHITECTURE.md` identifies the V2 architecture as the active model: storage → repositories → domain services → resolvers → view models → components, with IndexedDB as the browser's canonical local data store.
+- The separate `docs/LIFEOS_V1_MVP_SPEC.md` is a V1 specification and must not be used to describe the current V2 physical IndexedDB schema.
+
+Therefore, the verified issue is **not** simply “three stores versus five stores.” The real boundary is that the prototype has a separate database name/schema and its own local `LifeEntry` records, while canonical V2 stores a validated `LifeOSDatabase` snapshot and already has domain operations for creating events, open loops, people, and relationships. Do not share the prototype's database or migrate its records automatically. If the next phase is approved, the safest implementation target is the canonical V2 app's existing capture workflow and domain operations—not a direct IndexedDB bridge. No production or canonical code was changed during this inspection.
