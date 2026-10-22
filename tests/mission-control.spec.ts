@@ -30,10 +30,18 @@ test("capture, edit, complete, search, and persist an entry", async ({ page }) =
 
 test("people and assets route to Entities", async ({ page }) => {
   await page.goto("/");
+
   await page.getByRole("button", { name: "Capture" }).click();
   await page.getByLabel("Entry type").selectOption("person");
   await page.getByLabel("Title").fill("Browser test contact");
   await page.getByRole("button", { name: "Save entry" }).click();
   await expect(page.getByRole("heading", { name: "Browser test contact" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Entities" })).toBeVisible();
+
+  await page.getByRole("button", { name: "Capture" }).click();
+  await page.getByLabel("Entry type").selectOption("asset");
+  await page.getByLabel("Title").fill("Browser test asset");
+  await page.getByRole("button", { name: "Save entry" }).click();
+  await expect(page.getByRole("heading", { name: "Browser test asset" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Entities" })).toBeVisible();
 });
