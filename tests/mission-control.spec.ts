@@ -45,3 +45,14 @@ test("people and assets route to Entities", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Browser test asset" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Entities" })).toBeVisible();
 });
+
+test("capture canonical mobile Mission Control screenshot artifact", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible();
+  await page.screenshot({
+    path: "artifacts/mission-control-mobile.png",
+    fullPage: true,
+    animations: "disabled",
+  });
+});
