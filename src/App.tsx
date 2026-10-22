@@ -51,6 +51,15 @@ export default function App() {
     });
   }, []);
 
+  useEffect(() => {
+    if (!captureOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeCapture();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [captureOpen]);
+
   const notify = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(null), 2400);
