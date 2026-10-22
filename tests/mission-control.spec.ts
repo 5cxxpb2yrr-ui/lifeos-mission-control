@@ -18,12 +18,12 @@ test("capture, edit, complete, search, and persist an entry", async ({ page }) =
   await page.getByRole("button", { name: "Mark complete" }).click();
   await expect(page.getByText("Inbox is clear")).toBeVisible();
 
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Search" }).click();
   await page.getByPlaceholder("Search saved titles, details, types…").fill("Edited browser verification task");
   await expect(page.getByRole("heading", { name: "Edited browser verification task" })).toBeVisible();
 
   await page.reload();
-  await page.getByRole("button", { name: "Search" }).click();
+  await page.getByRole("navigation", { name: "Main navigation" }).getByRole("button", { name: "Search" }).click();
   await page.getByPlaceholder("Search saved titles, details, types…").fill("Edited browser verification task");
   await expect(page.getByRole("heading", { name: "Edited browser verification task" })).toBeVisible();
 });
