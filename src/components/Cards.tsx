@@ -1,12 +1,12 @@
-import { AlertTriangle, ArrowRight, Car, FileClock, FileText, Heart, Lightbulb, Phone, ShieldCheck, Sparkles, Target } from "lucide-react";
+import { AlertTriangle, ArrowRight, Car, FileClock, FileText, Heart, Lightbulb, Phone, ShieldCheck, Sparkles, Target, Ellipsis } from "lucide-react";
 import type { BriefingItem } from "../data/sampleBriefing";
 import { Score } from "./Score";
 
 export type ActionHandler = (actionId: string, item: BriefingItem) => void;
 const toneIcon = { neutral: Car, blue: ShieldCheck, amber: AlertTriangle, green: Lightbulb, rose: Heart };
 
-function Actions({ item, onAction }: { item: BriefingItem; onAction: ActionHandler }) {
-  return <div className="actions">{item.actions.map(a => <button key={a.id} className={a.primary ? "primary" : ""} onClick={() => onAction(a.id, item)}>{a.id === "call" && <Phone size={16} />}{a.label}</button>)}</div>;
+function Actions({ item, onAction, overflow = false }: { item: BriefingItem; onAction: ActionHandler; overflow?: boolean }) {
+  return <div className={overflow ? "actions actions--hero" : "actions"}>{item.actions.map(a => <button key={a.id} className={a.primary ? "primary" : ""} onClick={() => onAction(a.id, item)}>{a.id === "call" && <Phone size={16} />}{a.label}</button>)}{overflow && <button className="actions__overflow" aria-label={`More actions for ${item.title}`} onClick={() => onAction("more", item)}><Ellipsis size={19}/></button>}</div>;
 }
 
 export function HeroCard({ item, onAction }: { item: BriefingItem; onAction: ActionHandler }) {
@@ -15,7 +15,7 @@ export function HeroCard({ item, onAction }: { item: BriefingItem; onAction: Act
     <div className="hero__main"><div className="hero__mark"><span>L</span></div><div><h2>{item.title}</h2><p>{item.entity} · {item.recommendation}</p><div className="scores"><Score label="Impact" value={item.impactScore} accent="#f2b742"/><Score label="Confidence" value={item.confidenceScore}/></div></div></div>
     <div className="detail"><Target size={20}/><div><small>Expected Outcome</small><p>{item.expectedOutcome}</p></div></div>
     <div className="detail"><FileText size={20}/><div><small>Why This Matters Now</small><p>{item.context} {item.whyNow}</p></div></div>
-    <Actions item={item} onAction={onAction}/>
+    <Actions item={item} onAction={onAction} overflow/>
   </article>;
 }
 
