@@ -158,7 +158,7 @@ export default function App() {
         <label>Entry type<select value={entryType} onChange={(event) => setEntryType(event.target.value as EntryType)}>{entryTypes.map(type => <option value={type.value} key={type.value}>{type.label}</option>)}</select></label>
         <label>Title<input required maxLength={160} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="What do you need to capture?"/></label>
         <label>Details<textarea maxLength={2000} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Optional context or next step" rows={3}/></label>
-        <label>Due date (optional)<input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)}/></label>
+        <details className="capture-advanced"><summary>More details <span>{dueAt ? "Due date set" : "Optional due date"}</span></summary><label>Due date<input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)}/></label></details>
         <p className="local-note">Saved only in this browser on this device. No sample or test entry will be created automatically.</p>
         <div className="modal-actions"><button type="button" className="secondary-button" onClick={closeCapture}>Cancel</button><button type="submit" className="capture-button">{editingEntryId ? "Save changes" : <><Plus size={17}/> Save entry</>}</button></div>
       </form>
