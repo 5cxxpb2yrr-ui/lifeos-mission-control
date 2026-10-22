@@ -5,8 +5,8 @@ import { Score } from "./Score";
 export type ActionHandler = (actionId: string, item: BriefingItem) => void;
 const toneIcon = { neutral: Car, blue: ShieldCheck, amber: AlertTriangle, green: Lightbulb, rose: Heart };
 
-function Actions({ item, onAction, overflow = false }: { item: BriefingItem; onAction: ActionHandler; overflow?: boolean }) {
-  return <div className={overflow ? "actions actions--hero" : "actions"}>{item.actions.map(a => <button key={a.id} className={a.primary ? "primary" : ""} onClick={() => onAction(a.id, item)}>{a.id === "call" && <Phone size={16} />}{a.label}</button>)}{overflow && <button className="actions__overflow" aria-label={`More actions for ${item.title}`} onClick={() => onAction("more", item)}><Ellipsis size={19}/></button>}</div>;
+function Actions({ item, onAction, hero = false }: { item: BriefingItem; onAction: ActionHandler; hero?: boolean }) {
+  return <div className={hero ? "actions actions--hero" : "actions"}>{item.actions.map(a => <button key={a.id} className={a.primary ? "primary" : ""} onClick={() => onAction(a.id, item)}>{a.id === "call" && <Phone size={16} />}{a.label}</button>)}</div>;
 }
 
 export function HeroCard({ item, onAction }: { item: BriefingItem; onAction: ActionHandler }) {
