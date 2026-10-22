@@ -1,67 +1,148 @@
-import { useEffect, useState } from "react";
-import { CalendarDays, Check, Ellipsis, Home, Inbox, RotateCcw, Search, Users } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { CalendarDays, Check, CircleCheck, ClipboardList, Home, Inbox, Plus, Search, Users, X, Ellipsis, FileClock } from "lucide-react";
 import { BriefingCard, HeroCard, ReviewCard } from "./components/Cards";
 import { sampleBriefing, type Briefing, type BriefingItem } from "./data/sampleBriefing";
-import { loadBriefing, recordActivity, resetBriefing, saveBriefing } from "./storage/db";
+import { loadBriefing, recordActivity, saveBriefing, loadEntries, saveEntry, updateEntry, loadActivity, type LifeEntry, type EntryType, type ActivityRecord } from "./storage/db";
 import { deferRecommendation, removeRecommendation } from "./storage/briefing";
+
+type Screen = "mission" | "inbox" | "entities" | "search" | "more";
+const entryTypes: { value: EntryType; label: string }[] = [
+  { value: "task", label: "Task / open loop" }, { value: "event", label: "Event" },
+  { value: "person", label: "Person" }, { value: "asset", label: "Asset" },
+  { value: "question", label: "Question" }, { value: "follow-up", label: "Follow-up" },
+  { value: "note", label: "Note" },
+];
+const screenLabels: Record<Screen, string> = { mission: "Mission", inbox: "Inbox", entities: "Entities", search: "Search", more: "More" };
 
 export default function App() {
   const [briefing, setBriefing] = useState<Briefing>(sampleBriefing);
+  const [entries, setEntries] = useState<LifeEntry[]>([]);
+  const [activity, setActivity] = useState<ActivityRecord[]>([]);
   const [ready, setReady] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [screen, setScreen] = useState<Screen>("mission");
+  const [captureOpen, setCaptureOpen] = useState(false);
+  const [entryType, setEntryType] = useState<EntryType>("task");
+  const [title, setTitle] = useState("");
+  const [details, setDetails] = useState("");
+  const [dueAt, setDueAt] = useState("");
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
-    void loadBriefing().then((saved) => {
+    void Promise.all([loadBriefing(), loadEntries(), loadActivity()]).then(([saved, savedEntries, savedActivity]) => {
       setBriefing(saved ?? sampleBriefing);
+      setEntries(savedEntries);
+      setActivity(savedActivity);
       setReady(true);
     });
   }, []);
-
-  const persist = async (next: Briefing) => {
-    setBriefing(next);
-    await saveBriefing(next);
-  };
 
   const notify = (message: string) => {
     setToast(message);
     window.setTimeout(() => setToast(null), 2400);
   };
+  const persist = async (next: Briefing) => { setBriefing(next); await saveBriefing(next); };
 
   const onAction = async (actionId: string, item: BriefingItem) => {
     if (actionId === "call") {
       await recordActivity({ id: crypto.randomUUID(), recommendationId: item.id, title: item.title, actionId, status: "opened", createdAt: new Date().toISOString() });
+      setActivity(await loadActivity());
       window.location.href = "tel:+18004366555";
       return;
     }
-
     const defer = actionId === "more" || actionId === "details";
-    const next = defer ? deferRecommendation(briefing, item.id) : removeRecommendation(briefing, item.id);
-    await persist(next);
+    await persist(defer ? deferRecommendation(briefing, item.id) : removeRecommendation(briefing, item.id));
     await recordActivity({ id: crypto.randomUUID(), recommendationId: item.id, title: item.title, actionId, status: defer ? "deferred" : "completed", createdAt: new Date().toISOString() });
+    setActivity(await loadActivity());
     notify(defer ? `${item.title} moved to Review Queue.` : `${item.title} marked complete.`);
   };
 
-  const restoreDemo = async () => {
-    await resetBriefing();
-    await saveBriefing(sampleBriefing);
-    setBriefing(sampleBriefing);
-    notify("Sample briefing restored.");
+  const createEntry = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const cleanTitle = title.trim();
+    if (!cleanTitle) return;
+    const entry: LifeEntry = { id: crypto.randomUUID(), type: entryType, title: cleanTitle, details: details.trim(), dueAt: dueAt || undefined, status: "open", createdAt: new Date().toISOString() };
+    await saveEntry(entry);
+    setEntries(await loadEntries());
+    setTitle(""); setDetails(""); setDueAt(""); setEntryType("task"); setCaptureOpen(false);
+    setScreen(entry.type === "person" || entry.type === "asset" ? "entities" : "inbox");
+    notify("Saved on this device.");
   };
+
+  const toggleEntry = async (entry: LifeEntry) => {
+    const next: LifeEntry = { ...entry, status: entry.status === "open" ? "completed" : "open" };
+    await updateEntry(next);
+    setEntries(await loadEntries());
+    notify(next.status === "completed" ? "Marked complete." : "Reopened.");
+  };
+
+  const filteredEntries = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    return entries.filter((entry) => {
+      const matchesQuery = !normalized || [entry.title, entry.details, entry.type].some((value) => value?.toLowerCase().includes(normalized));
+      if (!matchesQuery) return false;
+      if (screen === "entities") return entry.type === "person" || entry.type === "asset";
+      if (screen === "inbox") return entry.type !== "person" && entry.type !== "asset";
+      if (screen === "search") return true;
+      return entry.status === "open";
+    }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }, [entries, query, screen]);
 
   if (!ready) return <div className="loading-screen">Preparing your briefing…</div>;
 
   return <div className="stage"><main className="phone">
-    <header className="top"><div><h1>Life<span>OS</span></h1><p>Mission Control</p></div><div className="top__tools"><button className="reset-button" onClick={restoreDemo} title="Restore sample briefing"><RotateCcw size={19}/></button><Search/><button>L</button></div></header>
-    <section className="brief"><p>Your executive office has reviewed the full picture.<br/>Here is what deserves attention now.</p><div><span><CalendarDays size={17}/> {new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(new Date())}</span><small>● {briefing.status}</small></div></section>
-    <section className="feed">
-      <HeroCard item={briefing.nextBestAction} onAction={onAction}/>
-      <div className="grid">{briefing.executeNow[0] && <BriefingCard label="EXECUTE NOW" item={briefing.executeNow[0]} onAction={onAction}/>} {briefing.decisionsRequired[0] && <BriefingCard label="DECISIONS REQUIRED" item={briefing.decisionsRequired[0]} onAction={onAction}/>}</div>
-      {briefing.atRisk[0] && <BriefingCard label="AT RISK" item={briefing.atRisk[0]} onAction={onAction}/>} 
-      <div className="grid">{briefing.waiting[0] && <BriefingCard label="WAITING" item={briefing.waiting[0]} onAction={onAction}/>} {briefing.opportunities[0] && <BriefingCard label="OPPORTUNITIES" item={briefing.opportunities[0]} onAction={onAction}/>}</div>
-      {briefing.relationshipRepairs[0] && <BriefingCard label="RELATIONSHIP REPAIRS" item={briefing.relationshipRepairs[0]} onAction={onAction}/>} 
-      <ReviewCard items={briefing.reviewQueue} onAction={onAction}/>
-    </section>
-    <nav><button className="active"><Home/><span>Mission</span></button><button><Inbox/><i/><span>Inbox</span></button><button><Users/><span>Entities</span></button><button><Search/><span>Search</span></button><button><Ellipsis/><span>More</span></button></nav>
+    <header className="top"><div><h1>Life<span>OS</span></h1><p>Mission Control</p></div><div className="top__tools">
+      <button className="tool-button" aria-label="Search" onClick={() => { setScreen("search"); setQuery(""); }}><Search size={19}/></button>
+      <button className="capture-button" onClick={() => setCaptureOpen(true)}><Plus size={18}/> Capture</button>
+    </div></header>
+
+    {screen === "mission" && <>
+      <section className="brief"><p>Your executive office has reviewed the full picture.<br/>Here is what deserves attention now.</p><div><span><CalendarDays size={17}/> {new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(new Date())}</span><small>● {briefing.status}</small></div></section>
+      <section className="feed">
+        <HeroCard item={briefing.nextBestAction} onAction={onAction}/>
+        <div className="grid">{briefing.executeNow[0] && <BriefingCard label="EXECUTE NOW" item={briefing.executeNow[0]} onAction={onAction}/>} {briefing.decisionsRequired[0] && <BriefingCard label="DECISIONS REQUIRED" item={briefing.decisionsRequired[0]} onAction={onAction}/>}</div>
+        {briefing.atRisk[0] && <BriefingCard label="AT RISK" item={briefing.atRisk[0]} onAction={onAction}/>}
+        <div className="grid">{briefing.waiting[0] && <BriefingCard label="WAITING" item={briefing.waiting[0]} onAction={onAction}/>} {briefing.opportunities[0] && <BriefingCard label="OPPORTUNITIES" item={briefing.opportunities[0]} onAction={onAction}/>}</div>
+        {briefing.relationshipRepairs[0] && <BriefingCard label="RELATIONSHIP REPAIRS" item={briefing.relationshipRepairs[0]} onAction={onAction}/>}
+        <ReviewCard items={briefing.reviewQueue} onAction={onAction}/>
+      </section>
+    </>}
+
+    {(screen === "inbox" || screen === "entities" || screen === "search") && <section className="workspace">
+      <div className="workspace__heading"><div><p className="workspace__eyebrow">{screen === "entities" ? "PEOPLE & ASSETS" : screen === "search" ? "UNIVERSAL SEARCH" : "OPEN LOOPS"}</p><h2>{screen === "entities" ? "Entities" : screen === "search" ? "Search LifeOS" : "Inbox"}</h2></div><span className="count-pill">{filteredEntries.length}</span></div>
+      {screen === "search" && <label className="search-field"><Search size={18}/><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search titles, details, types…" autoFocus /></label>}
+      {screen !== "search" && <p className="workspace__hint">{screen === "entities" ? "People and assets you capture are listed here." : "Capture a task, question, event, or follow-up. Your entries stay on this device."}</p>}
+      {filteredEntries.length === 0 ? <div className="empty-state"><ClipboardList size={28}/><strong>{screen === "search" && query ? "No matches found" : screen === "entities" ? "No entities yet" : "Inbox is clear"}</strong><p>{screen === "search" && query ? "Try another search term." : "Use Capture to add your first item. Nothing will be added automatically."}</p>{screen !== "search" && <button className="capture-button" onClick={() => setCaptureOpen(true)}><Plus size={17}/> Capture an item</button>}</div> : <div className="entry-list">{filteredEntries.map(entry => <article className={`entry-card ${entry.status === "completed" ? "entry-card--done" : ""}`} key={entry.id}>
+        <button className="entry-check" onClick={() => void toggleEntry(entry)} aria-label={entry.status === "open" ? "Mark complete" : "Reopen"}>{entry.status === "completed" ? <CircleCheck size={22}/> : <span/>}</button>
+        <div className="entry-card__content"><div className="entry-meta"><span>{entry.type}</span>{entry.dueAt && <time>{new Date(entry.dueAt + (entry.dueAt.length === 10 ? "T12:00:00" : "")).toLocaleDateString()}</time>}</div><h3>{entry.title}</h3>{entry.details && <p>{entry.details}</p>}</div>
+      </article>)}</div>}
+    </section>}
+
+    {screen === "more" && <section className="workspace">
+      <div className="workspace__heading"><div><p className="workspace__eyebrow">YOUR DEVICE</p><h2>More</h2></div></div>
+      <div className="stats-grid"><div><strong>{entries.filter(item => item.status === "open").length}</strong><span>Open entries</span></div><div><strong>{entries.filter(item => item.status === "completed").length}</strong><span>Completed</span></div><div><strong>{activity.length}</strong><span>Briefing actions</span></div></div>
+      <p className="workspace__hint">Captured entries are stored locally in this browser using IndexedDB. They are not synced to the main LifeOS event graph or to another device.</p>
+      <article className="card activity-card"><header><span><FileClock size={17}/>RECENT BRIEFING ACTIVITY</span></header>
+        {activity.length === 0 ? <p className="workspace__hint">No briefing actions recorded yet.</p> : activity.slice().sort((a,b) => b.createdAt.localeCompare(a.createdAt)).slice(0,12).map(item => <div className="activity-row" key={item.id}><span>{item.title}</span><small>{item.status} · {new Date(item.createdAt).toLocaleDateString()}</small></div>)}
+      </article>
+    </section>}
+
+    <nav aria-label="Main navigation">{(Object.keys(screenLabels) as Screen[]).map((item) => {
+      const Icon = item === "mission" ? Home : item === "inbox" ? Inbox : item === "entities" ? Users : item === "search" ? Search : Ellipsis;
+      return <button key={item} className={screen === item ? "active" : ""} aria-current={screen === item ? "page" : undefined} onClick={() => { setScreen(item); if (item !== "search") setQuery(""); }}><Icon/><span>{screenLabels[item]}</span></button>;
+    })}</nav>
+
+    {captureOpen && <div className="modal-backdrop" onClick={() => setCaptureOpen(false)}><section className="capture-modal" role="dialog" aria-modal="true" aria-labelledby="capture-title" onClick={(event) => event.stopPropagation()}>
+      <header><div><p className="workspace__eyebrow">UNIVERSAL CAPTURE</p><h2 id="capture-title">Add to LifeOS</h2></div><button className="close-button" aria-label="Close capture" onClick={() => setCaptureOpen(false)}><X size={20}/></button></header>
+      <form onSubmit={(event) => void createEntry(event)}>
+        <label>Entry type<select value={entryType} onChange={(event) => setEntryType(event.target.value as EntryType)}>{entryTypes.map(type => <option value={type.value} key={type.value}>{type.label}</option>)}</select></label>
+        <label>Title<input required maxLength={160} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="What do you need to capture?"/></label>
+        <label>Details<textarea maxLength={2000} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Optional context or next step" rows={3}/></label>
+        <label>Due date (optional)<input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)}/></label>
+        <p className="local-note">Saved only in this browser on this device. No sample or test entry will be created automatically.</p>
+        <div className="modal-actions"><button type="button" className="secondary-button" onClick={() => setCaptureOpen(false)}>Cancel</button><button type="submit" className="capture-button"><Plus size={17}/> Save entry</button></div>
+      </form>
+    </section></div>}
     {toast && <div className="toast"><Check size={18}/>{toast}</div>}
   </main></div>;
 }
