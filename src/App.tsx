@@ -13,6 +13,15 @@ const entryTypes: { value: EntryType; label: string }[] = [
   { value: "note", label: "Note" },
 ];
 const screenLabels: Record<Screen, string> = { mission: "Mission", inbox: "Inbox", entities: "Entities", search: "Search", more: "More" };
+const captureCopy: Record<EntryType, { title: string; detailsLabel: string; detailsPlaceholder: string; hint: string }> = {
+  task: { title: "What needs to get done?", detailsLabel: "Details", detailsPlaceholder: "Optional context or next step", hint: "A task or open loop to keep visible until it is resolved." },
+  event: { title: "What is happening?", detailsLabel: "Event details", detailsPlaceholder: "When, where, or other event context", hint: "This prototype stores a title and notes only; it does not create a canonical event record." },
+  person: { title: "Who do you want to remember?", detailsLabel: "Relationship / context", detailsPlaceholder: "How you know them or what to remember", hint: "Local contact note only—not a complete canonical person record." },
+  asset: { title: "What asset do you want to track?", detailsLabel: "Asset details", detailsPlaceholder: "Type, location, or other context", hint: "Local asset note only—not a complete canonical asset record." },
+  question: { title: "What question is unresolved?", detailsLabel: "Question context", detailsPlaceholder: "What you need to find out", hint: "Keep the unresolved question and any context together." },
+  "follow-up": { title: "Who or what needs a follow-up?", detailsLabel: "Follow-up details", detailsPlaceholder: "Next step or context for following up", hint: "A reminder to follow up; linking to a canonical person is not supported here." },
+  note: { title: "What do you want to remember?", detailsLabel: "Note", detailsPlaceholder: "Write a short note", hint: "A simple note saved locally in this browser." },
+};
 
 export default function App() {
   const [briefing, setBriefing] = useState<Briefing>(sampleBriefing);
@@ -156,8 +165,9 @@ export default function App() {
       <header><div><p className="workspace__eyebrow">{editingEntryId ? "EDIT ENTRY · THIS DEVICE" : "QUICK CAPTURE · THIS DEVICE"}</p><h2 id="capture-title">{editingEntryId ? "Edit entry" : "Add to LifeOS"}</h2></div><button className="close-button" aria-label="Close capture" onClick={closeCapture}><X size={20}/></button></header>
       <form onSubmit={(event) => void createEntry(event)}>
         <label>Entry type<select value={entryType} onChange={(event) => setEntryType(event.target.value as EntryType)}>{entryTypes.map(type => <option value={type.value} key={type.value}>{type.label}</option>)}</select></label>
-        <label>Title<input required maxLength={160} value={title} onChange={(event) => setTitle(event.target.value)} placeholder="What do you need to capture?"/></label>
-        <label>Details<textarea maxLength={2000} value={details} onChange={(event) => setDetails(event.target.value)} placeholder="Optional context or next step" rows={3}/></label>
+        <p className="capture-type-hint" aria-live="polite">{captureCopy[entryType].hint}</p>
+        <label>Title<input required maxLength={160} value={title} onChange={(event) => setTitle(event.target.value)} placeholder={captureCopy[entryType].title}/></label>
+        <label>{captureCopy[entryType].detailsLabel}<textarea maxLength={2000} value={details} onChange={(event) => setDetails(event.target.value)} placeholder={captureCopy[entryType].detailsPlaceholder} rows={3}/></label>
         <details className="capture-advanced"><summary>More details <span>{dueAt ? "Due date set" : "Optional due date"}</span></summary><label>Due date<input type="date" value={dueAt} onChange={(event) => setDueAt(event.target.value)}/></label></details>
         <p className="local-note">Saved only in this browser on this device. No sample or test entry will be created automatically.</p>
         <div className="modal-actions"><button type="button" className="secondary-button" onClick={closeCapture}>Cancel</button><button type="submit" className="capture-button">{editingEntryId ? "Save changes" : <><Plus size={17}/> Save entry</>}</button></div>
