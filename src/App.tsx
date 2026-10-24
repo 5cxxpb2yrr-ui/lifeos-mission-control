@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { CalendarDays, Check, Ellipsis, Home, Inbox, Plus, RotateCcw, Search, Users, X, ArrowRight, FileText } from "lucide-react";
 import { BriefingCard, HeroCard, ReviewCard } from "./components/Cards";
 import { sampleBriefing, type Briefing, type BriefingItem } from "./data/sampleBriefing";
@@ -66,7 +66,7 @@ export default function App() {
     notify("Sample briefing restored.");
   };
 
-  const addCapture = (event: React.FormEvent<HTMLFormElement>) => {
+  const addCapture = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const title = captureTitle.trim();
     if (!title) return;
