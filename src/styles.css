@@ -29,3 +29,10 @@
 
 /* Type-aware capture guidance stays compact on narrow phones. */
 .capture-type-hint{margin:-5px 0 0;padding:9px 11px;border-left:2px solid #f59e0b;border-radius:0 9px 9px 0;background:rgba(120,53,15,.1);color:#aebbd0;font-size:11px;line-height:1.45}
+
+
+/* Mobile viewport and fixed-navigation clearance */
+.phone{padding-bottom:calc(176px + env(safe-area-inset-bottom))}
+nav{width:min(100%,480px);padding-bottom:calc(16px + env(safe-area-inset-bottom));}
+@media(max-width:540px){.phone{padding-bottom:calc(184px + env(safe-area-inset-bottom))}.feed{gap:13px}.hero,.card{scroll-margin-bottom:120px}}
+@media(max-width:370px){.phone{padding-bottom:calc(192px + env(safe-area-inset-bottom))}nav button{font-size:9px}nav button svg{width:20px}}
